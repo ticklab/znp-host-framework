@@ -58,6 +58,9 @@
  * MACROS
  */
 
+#define MAX_CHILDREN 20
+#define MAX_NODE_LIST 64
+
 /*********************************************************************
  * TYPES
  */
@@ -155,10 +158,10 @@ typedef struct
 	uint16_t NodeAddr;
 	uint8_t Type;
 	uint8_t ChildCount;
-	ChildNode_t childs[256];
+	ChildNode_t childs[MAX_CHILDREN];
 } Node_t;
 
-Node_t nodeList[64];
+Node_t nodeList[MAX_NODE_LIST];
 uint8_t nodeCount = 0;
 static uint8_t mtSysResetIndCb(ResetIndFormat_t *msg)
 {
@@ -243,15 +246,17 @@ static uint8_t mtZdoMgmtLqiRspCb(MgmtLqiRspFormat_t *msg)
 {
 	uint8_t devType = 0;
 	uint8_t devRelation = 0;
+	uint8_t localNodeCount = nodeCount;
 	MgmtLqiReqFormat_t req;
 
 	if (msg->Status == MT_RPC_SUCCESS)
 	{
-		nodeList[nodeCount].NodeAddr = msg->SrcAddr;
-		nodeList[nodeCount].Type = (msg->SrcAddr == 0 ?
+		nodeCount++;
+		nodeList[localNodeCount].NodeAddr = msg->SrcAddr;
+		nodeList[localNodeCount].Type = (msg->SrcAddr == 0 ?
 		DEVICETYPE_COORDINATOR :
 		                                                DEVICETYPE_ROUTER);
-		nodeList[nodeCount].ChildCount = 0;
+		nodeList[localNodeCount].ChildCount = 0;
 		uint32_t i;
 		for (i = 0; i < msg->NeighborLqiListCount; i++)
 		{
@@ -260,11 +265,11 @@ static uint8_t mtZdoMgmtLqiRspCb(MgmtLqiRspFormat_t *msg)
 			        >> 4) & 7);
 			if (devRelation == 1)
 			{
-				uint8_t cCount = nodeList[nodeCount].ChildCount;
-				nodeList[nodeCount].childs[cCount].ChildAddr =
+				uint8_t cCount = nodeList[localNodeCount].ChildCount;
+				nodeList[localNodeCount].childs[cCount].ChildAddr =
 				        msg->NeighborLqiList[i].NetworkAddress;
-				nodeList[nodeCount].childs[cCount].Type = devType;
-				nodeList[nodeCount].ChildCount++;
+				nodeList[localNodeCount].childs[cCount].Type = devType;
+				nodeList[localNodeCount].ChildCount++;
 				if (devType == DEVICETYPE_ROUTER)
 				{
 					req.DstAddr = msg->NeighborLqiList[i].NetworkAddress;
@@ -273,7 +278,6 @@ static uint8_t mtZdoMgmtLqiRspCb(MgmtLqiRspFormat_t *msg)
 				}
 			}
 		}
-		nodeCount++;
 	}
 	else
 	{

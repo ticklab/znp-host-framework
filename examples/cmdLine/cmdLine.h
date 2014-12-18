@@ -36,8 +36,8 @@
  *
  */
 
-#ifndef AFDATASENDRCV_H
-#define AFDATASENDRCV_H
+#ifndef CMDLINE_H
+#define CMDLINE_H
 
 #ifdef __cplusplus
 extern "C"
@@ -52,4 +52,4 @@ void appInitQ(void);
 }
 #endif
 
-#endif /* AFDATASENDRCV_H */
+#endif /* CMDLINE_H */

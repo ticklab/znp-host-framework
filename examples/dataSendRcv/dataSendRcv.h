@@ -36,8 +36,8 @@
  *
  */
 
-#ifndef AFDATASENDRCV_H
-#define AFDATASENDRCV_H
+#ifndef DATASENDRCV_H
+#define DATASENDRCV_H
 
 #ifdef __cplusplus
 extern "C"
@@ -53,4 +53,4 @@ void appInitQ(void);
 }
 #endif
 
-#endif /* AFDATASENDRCV_H */
+#endif /* DATASENDRCV_H */

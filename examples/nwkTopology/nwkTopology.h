@@ -36,8 +36,8 @@
  *
  */
 
-#ifndef AFDATASENDRCV_H
-#define AFDATASENDRCV_H
+#ifndef NWKTOPOLOGY_H
+#define NWKTOPOLOGY_H
 
 #ifdef __cplusplus
 extern "C"
@@ -52,4 +52,4 @@ void appInitQ(void);
 }
 #endif
 
-#endif /* AFDATASENDRCV_H */
+#endif /* NWKTOPOLOGY_H */
