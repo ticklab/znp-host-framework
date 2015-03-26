@@ -1,6 +1,6 @@
 /**************************************************************************************************
- * Filename:       servDisc.c
- * Description:    This file contains servDisc application.
+ * Filename:       nwkTopology.c
+ * Description:    This file contains nwkTopology application.
  *
  *
  * Copyright (C) 2013 Texas Instruments Incorporated - http://www.ti.com/
@@ -58,6 +58,9 @@
  * MACROS
  */
 
+#define MAX_CHILDREN 20
+#define MAX_NODE_LIST 64
+
 /*********************************************************************
  * TYPES
  */
@@ -71,14 +74,20 @@ devStates_t devState = DEV_HOLD;
 uint8_t gSrcEndPoint = 1;
 uint8_t gDstEndPoint = 1;
 
+/***********************************************************************/
+
+void usage(char* exeName)
+{
+	consolePrint("Usage: ./%s <port>\n", exeName);
+	consolePrint("Eample: ./%s /dev/ttyACM0\n", exeName);
+}
+
 /*********************************************************************
  * LOCAL FUNCTIONS
  */
 //ZDO Callbacks
 static uint8_t mtZdoStateChangeIndCb(uint8_t newDevState);
-static uint8_t mtZdoSimpleDescRspCb(SimpleDescRspFormat_t *msg);
-static uint8_t mtZdoActiveEpRspCb(ActiveEpRspFormat_t *msg);
-static uint8_t mtZdoEndDeviceAnnceIndCb(EndDeviceAnnceIndFormat_t *msg);
+static uint8_t mtZdoMgmtLqiRspCb(MgmtLqiRspFormat_t *msg);
 
 //SYS Callbacks
 
@@ -98,16 +107,18 @@ static int32_t registerAf(void);
 
 // SYS callbacks
 static mtSysCb_t mtSysCb =
-	{ NULL, NULL, NULL, mtSysResetIndCb, NULL, NULL, NULL, NULL, NULL, NULL,
-	        NULL, NULL, NULL, NULL };
+	{
+	        //mtSysResetInd          //MT_SYS_RESET_IND
+	        NULL, NULL, NULL, mtSysResetIndCb, NULL, NULL, NULL, NULL, NULL,
+	        NULL, NULL, NULL, NULL, NULL };
 
 static mtZdoCb_t mtZdoCb =
 	{ NULL,       // MT_ZDO_NWK_ADDR_RSP
 	        NULL,      // MT_ZDO_IEEE_ADDR_RSP
 	        NULL,      // MT_ZDO_NODE_DESC_RSP
 	        NULL,     // MT_ZDO_POWER_DESC_RSP
-	        mtZdoSimpleDescRspCb,    // MT_ZDO_SIMPLE_DESC_RSP
-	        mtZdoActiveEpRspCb,      // MT_ZDO_ACTIVE_EP_RSP
+	        NULL,    // MT_ZDO_SIMPLE_DESC_RSP
+	        NULL,      // MT_ZDO_ACTIVE_EP_RSP
 	        NULL,     // MT_ZDO_MATCH_DESC_RSP
 	        NULL,   // MT_ZDO_COMPLEX_DESC_RSP
 	        NULL,      // MT_ZDO_USER_DESC_RSP
@@ -117,14 +128,14 @@ static mtZdoCb_t mtZdoCb =
 	        NULL,          // MT_ZDO_BIND_RSP
 	        NULL,        // MT_ZDO_UNBIND_RSP
 	        NULL,   // MT_ZDO_MGMT_NWK_DISC_RSP
-	        NULL,       // MT_ZDO_MGMT_LQI_RSP
+	        mtZdoMgmtLqiRspCb,       // MT_ZDO_MGMT_LQI_RSP
 	        NULL,       // MT_ZDO_MGMT_RTG_RSP
 	        NULL,      // MT_ZDO_MGMT_BIND_RSP
 	        NULL,     // MT_ZDO_MGMT_LEAVE_RSP
 	        NULL,     // MT_ZDO_MGMT_DIRECT_JOIN_RSP
 	        NULL,     // MT_ZDO_MGMT_PERMIT_JOIN_RSP
 	        mtZdoStateChangeIndCb,   // MT_ZDO_STATE_CHANGE_IND
-	        mtZdoEndDeviceAnnceIndCb,   // MT_ZDO_END_DEVICE_ANNCE_IND
+	        NULL,   // MT_ZDO_END_DEVICE_ANNCE_IND
 	        NULL,        // MT_ZDO_SRC_RTG_IND
 	        NULL,	 //MT_ZDO_BEACON_NOTIFY_IND
 	        NULL,			 //MT_ZDO_JOIN_CNF
@@ -135,6 +146,23 @@ static mtZdoCb_t mtZdoCb =
 	        NULL,  //MT_ZDO_MATCH_DESC_RSP_SENT
 	        NULL, NULL };
 
+typedef struct
+{
+	uint16_t ChildAddr;
+	uint8_t Type;
+
+} ChildNode_t;
+
+typedef struct
+{
+	uint16_t NodeAddr;
+	uint8_t Type;
+	uint8_t ChildCount;
+	ChildNode_t childs[MAX_CHILDREN];
+} Node_t;
+
+Node_t nodeList[MAX_NODE_LIST];
+uint8_t nodeCount = 0;
 static uint8_t mtSysResetIndCb(ResetIndFormat_t *msg)
 {
 
@@ -213,71 +241,50 @@ static uint8_t mtZdoStateChangeIndCb(uint8_t newDevState)
 
 	return SUCCESS;
 }
-static uint8_t mtZdoSimpleDescRspCb(SimpleDescRspFormat_t *msg)
+
+static uint8_t mtZdoMgmtLqiRspCb(MgmtLqiRspFormat_t *msg)
 {
+	uint8_t devType = 0;
+	uint8_t devRelation = 0;
+	uint8_t localNodeCount = nodeCount;
+	MgmtLqiReqFormat_t req;
 
 	if (msg->Status == MT_RPC_SUCCESS)
 	{
-		consolePrint("\tEndpoint: 0x%02X\n", msg->Endpoint);
-		consolePrint("\tProfileID: 0x%04X\n", msg->ProfileID);
-		consolePrint("\tDeviceID: 0x%04X\n", msg->DeviceID);
-		consolePrint("\tDeviceVersion: 0x%02X\n", msg->DeviceVersion);
-		consolePrint("\tNumInClusters: %d\n", msg->NumInClusters);
+		nodeCount++;
+		nodeList[localNodeCount].NodeAddr = msg->SrcAddr;
+		nodeList[localNodeCount].Type = (msg->SrcAddr == 0 ?
+		DEVICETYPE_COORDINATOR :
+		                                                DEVICETYPE_ROUTER);
+		nodeList[localNodeCount].ChildCount = 0;
 		uint32_t i;
-		for (i = 0; i < msg->NumInClusters; i++)
+		for (i = 0; i < msg->NeighborLqiListCount; i++)
 		{
-			consolePrint("\t\tInClusterList[%d]: 0x%04X\n", i,
-			        msg->InClusterList[i]);
-		}
-		consolePrint("\tNumOutClusters: %d\n", msg->NumOutClusters);
-		for (i = 0; i < msg->NumOutClusters; i++)
-		{
-			consolePrint("\t\tOutClusterList[%d]: 0x%04X\n", i,
-			        msg->OutClusterList[i]);
-		}
-		consolePrint("\n");
-	}
-	else
-	{
-		consolePrint("SimpleDescRsp Status: FAIL 0x%02X\n", msg->Status);
-	}
-
-	return msg->Status;
-}
-static uint8_t mtZdoActiveEpRspCb(ActiveEpRspFormat_t *msg)
-{
-
-	SimpleDescReqFormat_t simReq;
-	if (msg->Status == MT_RPC_SUCCESS)
-	{
-		simReq.DstAddr = msg->NwkAddr;
-		simReq.NwkAddrOfInterest = msg->NwkAddr;
-		consolePrint("Number of Endpoints: %d\n", msg->ActiveEPCount);
-		uint32_t i;
-		for (i = 0; i < msg->ActiveEPCount; i++)
-		{
-			simReq.Endpoint = msg->ActiveEPList[i];
-			zdoSimpleDescReq(&simReq);
+			devType = msg->NeighborLqiList[i].DevTyp_RxOnWhenIdle_Relat & 3;
+			devRelation = ((msg->NeighborLqiList[i].DevTyp_RxOnWhenIdle_Relat
+			        >> 4) & 7);
+			if (devRelation == 1)
+			{
+				uint8_t cCount = nodeList[localNodeCount].ChildCount;
+				nodeList[localNodeCount].childs[cCount].ChildAddr =
+				        msg->NeighborLqiList[i].NetworkAddress;
+				nodeList[localNodeCount].childs[cCount].Type = devType;
+				nodeList[localNodeCount].ChildCount++;
+				if (devType == DEVICETYPE_ROUTER)
+				{
+					req.DstAddr = msg->NeighborLqiList[i].NetworkAddress;
+					req.StartIndex = 0;
+					zdoMgmtLqiReq(&req);
+				}
+			}
 		}
 	}
 	else
 	{
-		consolePrint("ActiveEpRsp Status: FAIL 0x%02X\n", msg->Status);
+		consolePrint("MgmtLqiRsp Status: FAIL 0x%02X\n", msg->Status);
 	}
 
 	return msg->Status;
-}
-
-static uint8_t mtZdoEndDeviceAnnceIndCb(EndDeviceAnnceIndFormat_t *msg)
-{
-
-	ActiveEpReqFormat_t actReq;
-	actReq.DstAddr = msg->NwkAddr;
-	actReq.NwkAddrOfInterest = msg->NwkAddr;
-	consolePrint("\nNew device joined network.\nNwkAddr: 0x%04X\n",
-	        msg->NwkAddr);
-	zdoActiveEpReq(&actReq);
-	return 0;
 }
 
 // helper functions for building and sending the NV messages
@@ -285,15 +292,16 @@ static uint8_t setNVStartup(uint8_t startupOption)
 {
 	uint8_t status;
 	OsalNvWriteFormat_t nvWrite;
-
 	// sending startup option
+
 	nvWrite.Id = ZCD_NV_STARTUP_OPTION;
 	nvWrite.Offset = 0;
 	nvWrite.Len = 1;
 	nvWrite.Value[0] = startupOption;
 	status = sysOsalNvWrite(&nvWrite);
+	dbg_print(PRINT_LEVEL_INFO, "\n");
 
-	dbg_print(PRINT_LEVEL_INFO, "\nNV Write Startup Option cmd sent[%d]...\n",
+	dbg_print(PRINT_LEVEL_INFO, "NV Write Startup Option cmd sent[%d]...\n",
 	        status);
 
 	return status;
@@ -303,14 +311,12 @@ static uint8_t setNVDevType(uint8_t devType)
 {
 	uint8_t status;
 	OsalNvWriteFormat_t nvWrite;
-
 	// setting dev type
 	nvWrite.Id = ZCD_NV_LOGICAL_TYPE;
 	nvWrite.Offset = 0;
 	nvWrite.Len = 1;
 	nvWrite.Value[0] = devType;
 	status = sysOsalNvWrite(&nvWrite);
-
 	dbg_print(PRINT_LEVEL_INFO, "\n");
 	dbg_print(PRINT_LEVEL_INFO, "NV Write Device Type cmd sent... [%d]\n",
 	        status);
@@ -323,7 +329,8 @@ static uint8_t setNVPanID(uint32_t panId)
 	uint8_t status;
 	OsalNvWriteFormat_t nvWrite;
 
-	dbg_print(PRINT_LEVEL_INFO, "\nNV Write PAN ID cmd sending...\n");
+	dbg_print(PRINT_LEVEL_INFO, "\n");
+	dbg_print(PRINT_LEVEL_INFO, "NV Write PAN ID cmd sending...\n");
 
 	nvWrite.Id = ZCD_NV_PANID;
 	nvWrite.Offset = 0;
@@ -331,8 +338,8 @@ static uint8_t setNVPanID(uint32_t panId)
 	nvWrite.Value[0] = LO_UINT16(panId);
 	nvWrite.Value[1] = HI_UINT16(panId);
 	status = sysOsalNvWrite(&nvWrite);
-
-	dbg_print(PRINT_LEVEL_INFO, "\nNV Write PAN ID cmd sent...[%d]\n", status);
+	dbg_print(PRINT_LEVEL_INFO, "\n");
+	dbg_print(PRINT_LEVEL_INFO, "NV Write PAN ID cmd sent...[%d]\n", status);
 
 	return status;
 }
@@ -341,7 +348,6 @@ static uint8_t setNVChanList(uint32_t chanList)
 {
 	OsalNvWriteFormat_t nvWrite;
 	uint8_t status;
-
 	// setting chanList
 	nvWrite.Id = ZCD_NV_CHANLIST;
 	nvWrite.Offset = 0;
@@ -351,7 +357,6 @@ static uint8_t setNVChanList(uint32_t chanList)
 	nvWrite.Value[2] = BREAK_UINT32(chanList, 2);
 	nvWrite.Value[3] = BREAK_UINT32(chanList, 3);
 	status = sysOsalNvWrite(&nvWrite);
-
 	dbg_print(PRINT_LEVEL_INFO, "\n");
 	dbg_print(PRINT_LEVEL_INFO, "NV Write Channel List cmd sent...[%d]\n",
 	        status);
@@ -402,7 +407,7 @@ static int32_t startNetwork(void)
 
 	if (newNwk)
 	{
-#ifndef CC26xx
+		#ifndef CC26xx
 		consolePrint(
 		        "Enter device type c: Coordinator, r: Router, e: End Device:\n");
 		consoleGetLine(sCh, 128);
@@ -432,7 +437,6 @@ static int32_t startNetwork(void)
 			return 0;
 		}
 #endif //CC26xx
-
 		//Select random PAN ID for Coord and join any PAN for RTR/ED
 		status = setNVPanID(0xFFFF);
 		if (status != MT_RPC_SUCCESS)
@@ -551,7 +555,6 @@ void* appProcess(void *argument)
 	{
 		status = rpcWaitMqClientMsg(50);
 	}
-
 	//init variable
 	devState = DEV_HOLD;
 	gSrcEndPoint = 1;
@@ -575,12 +578,49 @@ void* appProcess(void *argument)
 	nvWrite.Len = 1;
 	nvWrite.Value[0] = 1;
 	status = sysOsalNvWrite(&nvWrite);
-
+	status = 0;
+	char cmd[128];
+	MgmtLqiReqFormat_t req;
+	req.DstAddr = 0;
+	req.StartIndex = 0;
 	while (1)
 	{
-		status = rpcWaitMqClientMsg(1000);
-	}
+		consolePrint("Press Enter to discover Network Topology:\n");
 
+		consoleGetLine(cmd, 128);
+		nodeCount = 0;
+
+		zdoMgmtLqiReq(&req);
+		while (status != -1)
+		{
+			status = rpcWaitMqClientMsg(1000);
+		}
+		status = 0;
+		uint8_t i;
+		for (i = 0; i < nodeCount; i++)
+		{
+			char *devtype = (
+			        nodeList[i].Type == DEVICETYPE_ROUTER ?
+			                "ROUTER" : "END DEVICE");
+			if (nodeList[i].Type == DEVICETYPE_COORDINATOR)
+			{
+				devtype = "COORDINATOR";
+			}
+			consolePrint("Node Address: 0x%04X   Type: %s\n",
+			        nodeList[i].NodeAddr, devtype);
+
+			consolePrint("Children: %d\n", nodeList[i].ChildCount);
+			uint8_t cI;
+			for (cI = 0; cI < nodeList[i].ChildCount; cI++)
+			{
+				uint8_t type = nodeList[i].childs[cI].Type;
+				consolePrint("\tAddress: 0x%04X   Type: %s\n",
+				        nodeList[i].childs[cI].ChildAddr,
+				        (type == DEVICETYPE_ROUTER ? "ROUTER" : "END DEVICE"));
+			}
+			consolePrint("\n");
+		}
+	}
 	return 0;
 }
 

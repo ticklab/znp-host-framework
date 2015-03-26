@@ -9,6 +9,7 @@ CC= gcc
 
 CFLAGS= -c -Wall -g -std=gnu99
 LIBS = -lpthread -lrt
+DEFS += -DxCC26xx
 PROJ_DIR=
 
 all: dataSendRcv.bin

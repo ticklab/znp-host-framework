@@ -2620,7 +2620,7 @@ static int32_t startNetwork(void)
 
 	if (newNwk)
 	{
-#ifndef CC26xx
+		#ifndef CC26xx
 		consolePrint(
 		        "Enter device type c: Coordinator, r: Router, e: End Device:\n");
 		consoleGetLine(sCh, 128);

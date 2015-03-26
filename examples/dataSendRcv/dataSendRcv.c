@@ -532,6 +532,7 @@ static int32_t startNetwork(void)
 
 	if (newNwk)
 	{
+#ifndef CC26xx
 		consolePrint(
 		        "Enter device type c: Coordinator, r: Router, e: End Device:\n");
 		consoleGetLine(sCh, 128);
@@ -560,6 +561,7 @@ static int32_t startNetwork(void)
 			dbg_print(PRINT_LEVEL_WARNING, "setNVDevType failed\n");
 			return 0;
 		}
+#endif //CC26xx
 		//Select random PAN ID for Coord and join any PAN for RTR/ED
 		status = setNVPanID(0xFFFF);
 		if (status != MT_RPC_SUCCESS)

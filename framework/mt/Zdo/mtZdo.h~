@@ -99,11 +99,11 @@ extern "C"
 #define MT_ZDO_ACTIVE_EP_RSP               0x85
 #define MT_ZDO_MATCH_DESC_RSP              0x86
 
-#define MT_ZDO_COMPLEX_DESC_RSP            0x90
-#define MT_ZDO_USER_DESC_RSP               0x91
+#define MT_ZDO_COMPLEX_DESC_RSP            0x87
+#define MT_ZDO_USER_DESC_RSP               0x88
 //                                         0x92 */ ((uint8)Discovery_Cache_req | 0x80)
-#define MT_ZDO_USER_DESC_CONF              0x94
-#define MT_ZDO_SERVER_DISC_RSP             0x95
+#define MT_ZDO_USER_DESC_CONF              0x89
+#define MT_ZDO_SERVER_DISC_RSP             0x8A
 
 #define MT_ZDO_END_DEVICE_BIND_RSP         0xA0
 #define MT_ZDO_BIND_RSP                    0xA1

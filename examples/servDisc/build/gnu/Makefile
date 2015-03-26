@@ -9,6 +9,7 @@ CC= gcc
 
 CFLAGS= -c -Wall -g -std=gnu99
 LIBS = -lrt -lpthread
+DEFS += -DxCC26xx
 PROJ_DIR=
 
 all: servDisc.bin

@@ -631,23 +631,15 @@ void EK_TM4C1294XL_initUART(void)
 	SysCtlPeripheralEnable(SYSCTL_PERIPH_UART4);
 	GPIOPinConfigure(GPIO_PK0_U4RX);
 	GPIOPinConfigure(GPIO_PK1_U4TX);
-#ifndef CC26xx
 	GPIOPinConfigure(GPIO_PK2_U4RTS);
 	GPIOPinConfigure(GPIO_PK3_U4CTS);
-#endif //CC26xx
-	GPIOPinTypeUART(GPIO_PORTK_BASE, GPIO_PIN_0 | GPIO_PIN_1 
-#ifndef CC26xx
-			| GPIO_PIN_2 | GPIO_PIN_3
-#endif //CC26xx
-						   );
+	GPIOPinTypeUART(GPIO_PORTK_BASE, GPIO_PIN_0 | GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_3);
 
 	/* Initialize the UART driver */
 	UART_init();
 
-#ifndef CC26xx
 	/* Set HW Flow Control o ZB Port*/
 	UARTFlowControlSet(uartTivaHWAttrs[EK_TM4C1294XL_UART4].baseAddr, UART_FLOWCONTROL_TX | UART_FLOWCONTROL_RX);
-#endif //CC26xx
 }
 #endif /* TI_DRIVERS_UART_INCLUDED */
 
