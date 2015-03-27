@@ -2710,10 +2710,13 @@ static void processLeaveInd(uint8_t *rpcBuff, uint8_t rpcLen)
 
 		rsp.SrcAddr = BUILD_UINT16(rpcBuff[msgIdx], rpcBuff[msgIdx + 1]);
 		msgIdx += 2;
-		rsp.ExtAddr = 0;
+		
+		rsp.ExtAddr = 0;		
 		uint8_t i;
 		for (i = 0; i < 8; i++)
+		{
 			rsp.ExtAddr |= ((uint64_t) rpcBuff[msgIdx++]) << (i * 8);
+		}
 		rsp.Request = rpcBuff[msgIdx++];
 		rsp.Remove = rpcBuff[msgIdx++];
 		rsp.Rejoin = rpcBuff[msgIdx++];
@@ -2754,14 +2757,18 @@ static void processMsgCbIncoming(uint8_t *rpcBuff, uint8_t rpcLen)
 		rsp.SeqNum = rpcBuff[msgIdx++];
 		rsp.MacDstAddr = BUILD_UINT16(rpcBuff[msgIdx], rpcBuff[msgIdx + 1]);
 		msgIdx += 2;
-		if (rpcLen > 9)
+
+		rsp.Status = rpcBuff[msgIdx++];
+		rsp.ExtAddr = 0;
+		uint8_t i;
+		for (i = 0; i < 8; i++)
 		{
-			uint32_t i;
-			for (i = 0; i < rsp.MacDstAddr; i++)
-			{
-				rsp.Data[i] = rpcBuff[msgIdx++];
-			}
+			rsp.ExtAddr |= ((uint64_t) rpcBuff[msgIdx++]) << (i * 8);
 		}
+		rsp.NwkAddr = BUILD_UINT16(rpcBuff[msgIdx], rpcBuff[msgIdx + 1]);
+		rsp.NotUsed = rpcBuff[msgIdx];
+		
+		
 		mtZdoCbs.pfnZdoMsgCbIncoming(&rsp);
 	}
 }

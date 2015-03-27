@@ -2188,10 +2188,11 @@ static uint8_t mtZdoMsgCbIncomingCb(MsgCbIncomingFormat_t *msg)
 	consolePrint("SecurityUse: 0x%02X\n", msg->SecurityUse);
 	consolePrint("SeqNum: 0x%02X\n", msg->SeqNum);
 	consolePrint("MacDstAddr: 0x%04X\n", msg->MacDstAddr);
-	consolePrint("Status: 0x%02X\n", msg->Status);
-	consolePrint("ExtAddr: 0x%016llX\n", (long long unsigned int) msg->ExtAddr);
-	consolePrint("NwkAddr: 0x%04X\n", msg->NwkAddr);
-	
+	uint32_t i;
+	for (i = 0; i < msg->MacDstAddr; i++)
+	{
+		consolePrint("Data[%d]: 0x%02X\n", i, msg->Data[i]);
+	}
 	SET_NRM_COLOR();
 	return 0;
 }

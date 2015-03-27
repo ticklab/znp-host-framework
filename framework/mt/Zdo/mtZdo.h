@@ -143,6 +143,7 @@ extern "C"
 /*MACROS*/
 #define SUCCESS 0x00
 #define FAILURE 0x01
+#define MAX_MTU 0x0C
 #define HI_UINT16(a) (((a) >> 8) & 0xFF)
 #define LO_UINT16(a) ((a) & 0xFF)
 #define BREAK_UINT32(var, ByteNum) \
@@ -690,7 +691,10 @@ typedef struct
 	uint8_t SecurityUse;
 	uint8_t SeqNum;
 	uint16_t MacDstAddr;
-	uint8_t Data[99];
+	uint8_t Status;
+	uint64_t ExtAddr;
+	uint16_t NwkAddr;
+	uint8_t NotUsed;
 } MsgCbIncomingFormat_t;
 
 //sets the types of response of State Change Ind
