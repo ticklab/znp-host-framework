@@ -2191,7 +2191,7 @@ static uint8_t mtZdoMsgCbIncomingCb(MsgCbIncomingFormat_t *msg)
 	consolePrint("Status: 0x%02X\n", msg->Status);
 	consolePrint("ExtAddr: 0x%016llX\n", (long long unsigned int) msg->ExtAddr);
 	consolePrint("NwkAddr: 0x%04X\n", msg->NwkAddr);
-	
+
 	SET_NRM_COLOR();
 	return 0;
 }
@@ -3071,50 +3071,64 @@ static void inputCmd(uint16_t index)
 		else
 		{
 			uint16_t tempPos = currentPos;
-			uint8_t listLen = input[currentPos - 1];
-			uint8_t listIdx;
-			for (listIdx = 0; listIdx < listLen; listIdx++)
-			{
-				SET_PARAM_COLOR();
-				consolePrint("Enter %s[%d]:\n", commands[index].atts[x].name,
-				        listIdx);
-				SET_NRM_COLOR();
-				consoleGetLine(value, 128);
-				if (attSize == 2)
-				{
-					sscanf(value, "%x", &tem);
-					sprintf(value, "%04X", tem);
-					//strPos = value;
-					if (tempPos % 2 != 0)
-					{
-						tempPos++;
-						currentPos++;
-					}
-				}
-				else if (attSize == 1)
-				{
-					sscanf(value, "%x", &tem);
-					sprintf(value, "%02X", tem);
-					//strPos = value;
-				}
-				strPos = value;
-				uint8_t idx;
-				for (idx = 0; idx < attSize; idx++)
-				{
-					if (strlen(strPos) > 0)
-					{
-						sscanf(strPos, "%2hhx",
-						        &input[tempPos + attSize - 1 - idx]);
-						strPos += (strPos[2] == ':' ? 3 : 2);
-					}
-					else
-					{
-						input[currentPos + attSize - 1 - idx] = 0;
-					}
-				}
-				tempPos += attSize;
-			}
-			currentPos += (attSize * commands[index].atts[x].isList);
+			uint8_t prevAttSize = commands[index].atts[x - 1].size;
+			uint16_t maxLen = commands[index].atts[x].isList;
+			uint16_t listLen = (prevAttSize == 1) ?
+                                    ((uint16_t)input[currentPos - 1]) :
+                                    BUILD_UINT16(input[currentPos - 2], input[currentPos - 1]);
+			uint16_t listIdx;
+
+			if(listLen >= maxLen)
+            {
+                consolePrint("\nPlease enter a length less than 0x%02X\n\n", maxLen);
+                x-=2;
+                currentPos -= prevAttSize;
+            }
+			else
+            {
+                for (listIdx = 0; listIdx < listLen; listIdx++)
+                {
+                    SET_PARAM_COLOR();
+                    consolePrint("Enter %s[%d]:\n", commands[index].atts[x].name,
+                            listIdx);
+                    SET_NRM_COLOR();
+                    consoleGetLine(value, 128);
+                    if (attSize == 2)
+                    {
+                        sscanf(value, "%x", &tem);
+                        sprintf(value, "%04X", tem);
+                        //strPos = value;
+                        if (tempPos % 2 != 0)
+                        {
+                            tempPos++;
+                            currentPos++;
+                        }
+                    }
+                    else if (attSize == 1)
+                    {
+                        sscanf(value, "%x", &tem);
+                        sprintf(value, "%02X", tem);
+                        //strPos = value;
+                    }
+                    strPos = value;
+                    uint8_t idx;
+                    for (idx = 0; idx < attSize; idx++)
+                    {
+                        if (strlen(strPos) > 0)
+                        {
+                            sscanf(strPos, "%2hhx",
+                                    &input[tempPos + attSize - 1 - idx]);
+                            strPos += (strPos[2] == ':' ? 3 : 2);
+                        }
+                        else
+                        {
+                            input[currentPos + attSize - 1 - idx] = 0;
+                        }
+                    }
+                    tempPos += attSize;
+                }
+                currentPos += (attSize * commands[index].atts[x].isList);
+            }
 		}
 	}
 
