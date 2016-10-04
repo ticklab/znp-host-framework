@@ -1,0 +1,36 @@
+#
+# Copyright 2016, Han Pengfei. All Rights Reserved.
+# Distributed under the terms of the MIT License.
+#
+
+Import('genv')
+
+# cmdLine sample
+cmdLine_script = "cmdLine/SConscript"
+cmdLine_target = genv.SConscript(cmdLine_script);
+
+# dataSendRcv sample
+dataSendRcv_script = "dataSendRcv/SConscript"
+dataSendRcv_target = genv.SConscript(dataSendRcv_script);
+
+# nwkTopology sample
+nwkTopology_script = "nwkTopology/SConscript"
+nwkTopology_target = genv.SConscript(nwkTopology_script);
+
+# servDisc sample
+servDisc_script = "servDisc/SConscript"
+servDisc_target = genv.SConscript(servDisc_script);
+
+# stressTest sample
+stressTest_script = "stressTest/SConscript"
+stressTest_target = genv.SConscript(stressTest_script);
+
+all_targets = [
+    cmdLine_target,
+    dataSendRcv_target,
+    nwkTopology_target,
+    servDisc_target,
+    stressTest_target,
+]
+
+Return("all_targets")
