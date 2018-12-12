@@ -1,6 +1,6 @@
-#ZNP Host Framework
+# ZNP Host Framework
 
-##Introduction
+## Introduction
 
 This git repository contains the source code for the ZNP POSIX Host Framework and Examples. The project is intended to help developer to develop ZigBee application on a host MCU/MPU connected to the Texas Instruments ZigBee Network Processor (CC253x). The framework offers a C callable / callback API to access the ZigBee Network Processor functionality available as a Binary Remote Procedure Call format over the UART/SPI interface.
 
@@ -18,14 +18,14 @@ The Platforms currently supported are:
 
 The framework and examples are described in more detail in the UserGuide in the /docs directory of this git.
 
-##Quick Start Guide
+## Quick Start Guide
 
-###Required HW
+### Required HW
 For the Linux platform only the [CC2538DK]( https://store.ti.com/CC2538DK-CC2538-Development-Kit-P4532.aspx) is required.
 
 For the TIRTOS Tiva platform you will need in addition to the [CC2538DK]( https://store.ti.com/CC2538DK-CC2538-Development-Kit-P4532.aspx) ; a [TIVA-C Launchpad](https://store.ti.com/Tiva-C-LaunchPad.aspx) and an [EM Booster pack](https://store.ti.com/boost-ccemadapter.aspx ) (modified as indicated in the Users Guide).
 
-###Programming the CC2538EM's with ZNP FW 
+### Programming the CC2538EM's with ZNP FW 
 Use the [SmartRF Programmer 2]( http://processors.wiki.ti.com/index.php/Download_CCS) to program the FW contain in the bin dir of the git repository.
 
 For the Linux Platform use /bin/cc2538-znp-120-usb-tclk.hex FW. For the TIRTOS/TIVA Platform use the cc2538-znp-120-uart-tclk.hex
@@ -40,7 +40,7 @@ Connect the CC2538EM to the Host:
 * For the Linux platform connect the CC2538EM to the Linux machine.
 * For the TIRTOS/TIVA platform connect the CC2538EM to the EM Booster Pack and then to the TIRTOS/TIVA Launchpad.
 
-### Building and running the examples
+###  Building and running the examples
 
 The following describe how the build environment is setup and how one of the examples can be run. For a complete description consult the Users Guide.
 
@@ -48,7 +48,7 @@ Clone the git
 
     git clone git://git.ti.com/znp-host-framework/znp-host-framework.git
 
-####Linux
+#### Linux
 
 Change dir to the build directory for one of the examples and build it
 
@@ -60,7 +60,7 @@ Then run the example:
     ./cmdLine.bin /dev/ttyACM0
     
 
-####TI RTOS
+#### TI RTOS
 
 Download CCS v6 from here:
 [CCS v6]( http://processors.wiki.ti.com/index.php/Download_CCS)
@@ -74,7 +74,7 @@ Open CCSv6, Import the project through Project->Import->Code Composer Studio->CC
 
 To build and download the example Right click on the example in the Project Explorer and select Debug As->Code Composer Debug Session
 
-##Known Issues and Limitations
+## Known Issues and Limitations
 
 * When built from ZStack-Home-1.2.1 ZNP for CC2538 USB the host framework intermittently receives corrupted RPC messages. For this reason hex files from ZStack-Home-1.2.0 are included. The root cause of this issue is currently being investigated.
 
